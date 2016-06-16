@@ -26,7 +26,7 @@ And set "Camera_link" to "kinect2_link" for transform and octomap nodes.
 
 Also, in src/moveit_robots/baxter/baxter_moveit_config/config, modify kinect_sensor.yaml
 
-Replace:
+Replace
 
 > point_cloud_topic: /kinect2/sd/points
 
