@@ -16,11 +16,11 @@ In Baxter_moveit_sensor_manager:
 
 Replace
 
-> "<include file="$(find freenect..."" /> 
+> include file="$(find freenect..."" 
 
 with 
 
-> <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+> include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch"
 
 And set "Camera_link" to "kinect2_link" for transform and octomap
 
