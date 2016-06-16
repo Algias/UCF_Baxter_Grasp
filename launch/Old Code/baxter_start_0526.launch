@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+<!-- this file needs to be completed before the others run, so it is difficult to 
+launch with this.-->
+<!--include file="$(find baxter_gazebo)/launch/baxter_world.launch">
+</include-->
+
+<node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" args="-e" output="screen">
+</node>
+
+<node name="joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" output="screen">
+</node>
+
+<node name="remap" pkg="baxter_grasp" type="remap.py" output="screen">
+</node>
+
+</launch>
