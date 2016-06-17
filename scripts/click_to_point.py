@@ -19,18 +19,28 @@ class PointClick:
 
         
     def __init__(self):
+        #Initialize global variables
         self.clickedPoint = PointStamped()
         self.point1 = []
         self.point2 = []
         self.point3 = []
+        
     def callback(self, data):
         self.clickedPoint = data;
+        #Uncomment to print out subscriber 
         #rospy.loginfo(rospy.get_caller_id() + " \n %s", self.clickedPoint)
         
     def listen(self):
+        #Subscribe to /clicked_point topic from RVIZ
         rospy.Subscriber("/clicked_point", PointStamped, self.callback)
         rospy.sleep(0.2)
       
+    def printPoints(self):
+        #Print out point values
+        print "point1:",self.point1
+        print "point2:",self.point2
+        print "point3:",self.point3
+        
     def pointClicker(self):
         print "*****Starting pointClicker Node"
         rospy.init_node('pointClicker',
@@ -52,8 +62,9 @@ class PointClick:
         
         while not rospy.is_shutdown():
             
-#if we have a full set of points, and the clicked point is new, reset points
-#and use the new point as the first point
+        #if we have a full set of points, and 
+        #the clicked point is new, reset points
+        #and use the new point as the first point
     
             if n == 4 and self.clickedPoint.point != previousPoint:
                 
@@ -64,9 +75,7 @@ class PointClick:
                 
                 previousPoint = self.clickedPoint.point
                 
-                print "point1:",self.point1
-                print "point2:",self.point2
-                print "point3:",self.point3
+                self.printPoints()
                 print "\n Enter point number", n
     
             #if the point counter is less than 4, and the 
@@ -84,9 +93,7 @@ class PointClick:
                     self.point3 = obj1.updatePoint(self.clickedPoint.point)
                         
                 if n is not 0:
-                    print "point1:",self.point1
-                    print "point2:",self.point2
-                    print "point3:",self.point3
+                    self.printPoints()
                         
                 if n != 0 and n < 3: print "\n Enter point number: ", n+1
                     
@@ -96,14 +103,15 @@ class PointClick:
                     
                 previousPoint = self.clickedPoint.point
                     
-    #if we have all points in the set, calculate two poses based on that set
+            #if we have all points in the set, 
+            #calculate two poses based on that set
             
             if self.point1 and self.point2 and self.point3:
                 obj1.calculatePose(self.point1, self.point2, self.point3) 
                 
             #publish the stopping pose and final pose based on 3 points
             
-            if obj1.pose_n and obj1.pose_s:    
+            if obj1.pose_n.pose is not [] and obj1.pose_s.pose is not []:    
                 pubpose1.publish(obj1.pose_s)
                 pubpose2.publish(obj1.pose_n)
             
@@ -120,9 +128,16 @@ class pose_calc:
         
         self.pose_n = geometry_msgs.msg.PoseStamped()
         self.pose_s = geometry_msgs.msg.PoseStamped()
+        self.pose_n.header.frame_id = "base"
+        self.pose_s.header.frame_id = "base"
+
+
          
     def get_quaternion(self,lst1,lst2,matchlist=None):
-        
+        #Python implementation of this method:
+        #Paul J. Besl and Neil D. McKay "Method for registration of 3-D shapes", 
+        #Sensor Fusion IV: Control Paradigms and Data Structures, 
+        #586 (April 30, 1992); http://dx.doi.org/10.1117/12.57955
         if not matchlist:
             matchlist=range(len(lst1))
         M=numpy.matrix([[0,0,0],[0,0,0],[0,0,0]])
@@ -205,7 +220,6 @@ class pose_calc:
             quat = self.get_quaternion(normalFrame, myFrame, matchlist = None)
             
             
-            self.pose_n.header.frame_id = "base"
             #find centroid of the three points to use as coordinates
             self.pose_n.pose.position.x = (point1[0] + point2[0] + point3[0])/3
             self.pose_n.pose.position.y = (point1[1] + point2[1] + point3[1])/3
@@ -217,8 +231,8 @@ class pose_calc:
            
             # stop pose
             
-            self.pose_s.header.frame_id = "base"
-            #find centroid of the three points to use as coordinates
+            #find centroid of the three points to use as coordinates and move
+            #along the Z axis back .1 meters
             self.pose_s.pose.position.x = (point1[0] + point2[0] 
                                            + point3[0])/3 -0.10*VZn[0]
             self.pose_s.pose.position.y = (point1[1] + point2[1] 

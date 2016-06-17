@@ -25,31 +25,29 @@ import baxter_interface
 import baxter_external_devices
 from baxter_interface import CHECK_VERSION
 
-class gomatlab:
+class listener:
     
     
     def __init__(self):
         self.final_pose = PoseStamped()
         self.stop_pose = PoseStamped()
         
-    def callback(self, data):
+    def callbackmypose1(self, data):
         self.stop_pose = data;
         # Uncomment if you want to echo the publisher
         # rospy.loginfo(rospy.get_caller_id() + " \n %s", self.stop_pose)
         
     def listen(self):
           # subs to topic
-        rospy.Subscriber("/mypose1", PoseStamped, self.callback)
+        rospy.Subscriber("/mypose1", PoseStamped, self.callbackmypose1)
+        rospy.Subscriber("/mypose2", PoseStamped, self.callbackmypose2)
+
         rospy.sleep(0.2)
         
-    def callback2(self, data):
+    def callbackmypose2(self, data):
         self.final_pose = data;
         # Uncomment if you want to echo the publisher
         # rospy.loginfo(rospy.get_caller_id() + " \n %s", self.final_pose)
-        
-    def listen2(self):
-        rospy.Subscriber("/mypose2", PoseStamped, self.callback2)
-        rospy.sleep(0.2)
         
 class autonomousGrasper:
     
@@ -71,9 +69,9 @@ class autonomousGrasper:
         self.group.set_planner_id("RRTConnectkConfigDefault")
         self.group.set_goal_orientation_tolerance(0.01)
         self.group.set_goal_position_tolerance(0.01)
-        self.Grasp = gomatlab()  # # Instantiate class
+        self.Grasp = listener()  # # Instantiate class
         self.group.allow_replanning(1)
-        self.group.set_num_planning_attempts(2
+        self.group.set_num_planning_attempts(2)
        
     def generate_Plan(self, poseInput):
         self.group.clear_pose_targets()
@@ -107,10 +105,12 @@ class autonomousGrasper:
       pose_target1.orientation.y = 0
       pose_target1.orientation.z = 0
       pose_target1.orientation.w = 0
-      if not self.move_to_pose(pose_target1):
-        print "==== Movement failed, shutting down ===="
-        moveit_commander.roscpp_shutdown()
-    
+#       if not self.move_to_pose(pose_target1):
+#         print "==== Movement failed, shutting down ===="
+#         moveit_commander.roscpp_shutdown()
+      self.group.set_pose_target(pose_target1)
+      self.group.go(wait=True) 
+
       self.grip_right.open()
     
       print "==== Reset Complete ===="              
@@ -118,6 +118,7 @@ class autonomousGrasper:
     def move_to_pose(self, poseInput):
         
         planTemp = self.generate_Plan(poseInput)
+        self.display_trajectory = moveit_msgs.msg.DisplayTrajectory()
         self.display_trajectory.trajectory_start = self.robot.get_current_state()
         self.display_trajectory.trajectory.append(planTemp)
         self.display_trajectory_publisher.publish(self.display_trajectory);
@@ -148,8 +149,7 @@ class autonomousGrasper:
         print "==== Starting graspLoop ===="
       
 
-        self.Grasp.listen()  # # listen to stop pose
-        self.Grasp.listen2()  # # listen to final pose
+        self.Grasp.listen()  # # listen to poses
         self.grip_right.calibrate()  # # Initial Gripper Calibration
         self.go_Init()  # # Goes to initial position to start
     
@@ -169,21 +169,30 @@ class autonomousGrasper:
             
                 print "==== Going to stop_pose ===="
             
-                if not self.move_to_pose(self.Grasp.stop_pose.pose):
-                    print "==== Movement failed ===="
-                    continue
-            
-                if not self.pick_object(self.Grasp.final_pose):
-                    print "==== Movement failed, returning to initial pose ===="
-                    self.go_Init()
-                    continue            
-    
+#                 if not self.move_to_pose(self.Grasp.stop_pose.pose):
+#                     print "==== Movement failed ===="
+#                     continue
+#             
+#                 if not self.pick_object(self.Grasp.final_pose.pose):
+#                     print "==== Movement failed, returning to initial pose ===="
+#                     self.go_Init()
+#                     continue            
+                self.group.set_pose_target(self.Grasp.stop_pose.pose)
+                self.group.go(wait=True)
+                print "==== going to final pose ===="
+                self.group.set_pose_target(self.Grasp.final_pose.pose)
+                self.group.go(wait=True)
+                self.grip_right.close(block=True)
+                   
                 print "==== Returning to stop_pose ===="
             
-                if not self.move_to_pose(self.Grasp.stop_pose.pose):
-                    print "==== Movement failed, returning to initial pose ===="
-                    self.go_Init()
-                    continue
+                #if not self.move_to_pose(self.Grasp.stop_pose.pose):
+                self.group.set_pose_target(self.Grasp.stop_pose.pose)
+                self.group.go(wait=True)
+
+#                     print "==== Movement failed, returning to initial pose ===="
+#                     self.go_Init()
+#                     continue
             
                 self.go_Init()
         
