@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="enable_robot" default="-e"/>
+    <arg name="joint" default="true"/>
+    <arg name="remap" default="true"/>
+    <arg name="kinect" default="true"/>
+    <arg name="click" default="true"/>
+    <arg name="moveit" default="true"/>
+
+    <node name="enable_robot" pkg="baxter_tools" type="enable_robot.py" 
+         args="$(arg enable_robot)" output="screen">
+    </node>
+
+    <group if="$(arg joint)">
+
+        <node name="joint_trajectory_action_server" pkg="baxter_interface"
+             type="joint_trajectory_action_server.py" output="screen">
+        </node>
+
+    </group>
+
+    <group if="$(arg remap)">
+
+         <node name="remap" pkg="baxter_grasp" type="remap.py" output="screen">
+        </node>
+
+    </group>
+
+    <group if="$(arg kinect)">
+        <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+        </include>
+
+        <arg name="camera_link_pose" default="-0.1952 -0.3913 0.1853  -0.1164 0.8411 -0.5267  0.0389"/>
+
+        <node pkg="tf" type="static_transform_publisher" name="camera_link_broadcaster"
+        args="$(arg camera_link_pose) /base /kinect2_link 50" />
+    </group>
+
+    <group if="$(arg moveit)">
+        <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch">
+             <arg name="kinect" value="false" />
+        </include>
+    </group>
+
+    <group if="$(arg click)">
+        <node name="click_to_point" pkg="baxter_grasp"
+             type="click_to_point.py" output="screen">
+        </node>
+    </group>
+
+</launch>
