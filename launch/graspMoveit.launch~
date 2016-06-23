@@ -9,6 +9,6 @@
                args="$(arg camera_link_pose) /base /kinect2_link 50" />
 
   <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch">
-	
+	    <arg name="kinect" value="false" />
   </include>
 </launch>

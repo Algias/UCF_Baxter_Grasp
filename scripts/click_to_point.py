@@ -221,9 +221,9 @@ class pose_calc:
             
             
             #find centroid of the three points to use as coordinates
-            self.pose_n.pose.position.x = (point1[0] + point2[0] + point3[0])/3
-            self.pose_n.pose.position.y = (point1[1] + point2[1] + point3[1])/3
-            self.pose_n.pose.position.z = (point1[2] + point2[2] + point3[2])/3
+            self.pose_n.pose.position.x = (point1[0] + point2[0] + point3[0])/3+0.04*VZn[0]
+            self.pose_n.pose.position.y = (point1[1] + point2[1] + point3[1])/3+0.04*VZn[1]
+            self.pose_n.pose.position.z = (point1[2] + point2[2] + point3[2])/3+0.04*VZn[2]
             self.pose_n.pose.orientation.w = quat[0]
             self.pose_n.pose.orientation.x = quat[1]
             self.pose_n.pose.orientation.y = quat[2]
