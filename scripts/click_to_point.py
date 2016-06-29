@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-import sys
 import copy
-import rospy
-import geometry_msgs.msg
-from std_msgs.msg import String
 from geometry_msgs.msg import (
     PoseStamped,
     PointStamped,
@@ -11,9 +7,13 @@ from geometry_msgs.msg import (
     Point,
     Quaternion,
 )
-from rospy.numpy_msg import numpy_msg
+import geometry_msgs.msg
 import numpy
+import rospy
+from rospy.numpy_msg import numpy_msg
 from std_msgs.msg import Header
+from std_msgs.msg import String
+import sys
 
 #===============================================================================
 # DESCRIPTION
@@ -28,9 +28,7 @@ from std_msgs.msg import Header
 # Subscribes to rviz's /clicked_point publisher.
 # Publishes to mypose1 and mypose2
 #===============================================================================
-
 class PointClick:
-
         
     def __init__(self):
         # Initialize global variables
@@ -262,7 +260,6 @@ class PoseCalc:
 def main():
     run = PointClick()
     run.point_clicker()
-
 
 if __name__ == '__main__':
     sys.exit(main())
