@@ -35,15 +35,15 @@ class PointClick:
         rospy.Subscriber("/clicked_point", PointStamped, self.callback)
         rospy.sleep(0.2)
       
-    def printPoints(self):
+    def print_points(self):
         #Print out point values
         print "point1:",self.point1
         print "point2:",self.point2
         print "point3:",self.point3
         
-    def pointClicker(self):
-        print "*****Starting pointClicker Node"
-        rospy.init_node('pointClicker',
+    def point_clicker(self):
+        print "*****Starting point_clicker Node"
+        rospy.init_node('point_clicker',
                       anonymous=True)
             
         #Subscribe to /clicked_point
@@ -56,7 +56,7 @@ class PointClick:
         #Initialize variables
         previousPoint = geometry_msgs.msg.Point()
         n = 0
-        obj1 = pose_calc()
+        obj1 = PoseCalc()
         
         print "Enter point number: 1 \n"
         
@@ -69,13 +69,13 @@ class PointClick:
             if n == 4 and self.clickedPoint.point != previousPoint:
                 
                 n = 2
-                self.point1 = obj1.updatePoint(self.clickedPoint.point)
+                self.point1 = obj1.update_point(self.clickedPoint.point)
                 self.point2 = []
                 self.point3 = []
                 
                 previousPoint = self.clickedPoint.point
                 
-                self.printPoints()
+                self.print_points()
                 print "\n Enter point number", n
     
             #if the point counter is less than 4, and the 
@@ -84,16 +84,16 @@ class PointClick:
             if n < 4 and self.clickedPoint.point != previousPoint:
                     
                 if n == 1:
-                    self.point1 = obj1.updatePoint(self.clickedPoint.point)
+                    self.point1 = obj1.update_point(self.clickedPoint.point)
                         
                 if n == 2:
-                    self.point2 = obj1.updatePoint(self.clickedPoint.point)
+                    self.point2 = obj1.update_point(self.clickedPoint.point)
                         
                 if n == 3:
-                    self.point3 = obj1.updatePoint(self.clickedPoint.point)
+                    self.point3 = obj1.update_point(self.clickedPoint.point)
                         
                 if n is not 0:
-                    self.printPoints()
+                    self.print_points()
                         
                 if n != 0 and n < 3: print "\n Enter point number: ", n+1
                     
@@ -107,7 +107,7 @@ class PointClick:
             #calculate two poses based on that set
             
             if self.point1 and self.point2 and self.point3:
-                obj1.calculatePose(self.point1, self.point2, self.point3) 
+                obj1.calculate_pose(self.point1, self.point2, self.point3) 
                 
             #publish the stopping pose and final pose based on 3 points
             
@@ -122,17 +122,14 @@ class PointClick:
              
         rospy.spin()
 
-class pose_calc:
+class PoseCalc:
     
     def __init__(self):
         
         self.pose_n = geometry_msgs.msg.PoseStamped()
         self.pose_s = geometry_msgs.msg.PoseStamped()
         self.pose_n.header.frame_id = "base"
-        self.pose_s.header.frame_id = "base"
-
-
-         
+        self.pose_s.header.frame_id = "base         
     def get_quaternion(self,lst1,lst2,matchlist=None):
         #Python implementation of this method:
         #Paul J. Besl and Neil D. McKay "Method for registration of 3-D shapes", 
@@ -176,7 +173,7 @@ class pose_calc:
         quat=numpy.array(quat).reshape(-1,).tolist()
         return quat
  
-    def updatePoint(self,ClickedPoint):
+    def update_point(self,ClickedPoint):
             nPoint = [0,0,0]
             nPoint[0] = ClickedPoint.x
             nPoint[1] = ClickedPoint.y
@@ -184,7 +181,7 @@ class pose_calc:
             #return [ClickedPoint.x,ClickedPoint.y,ClickedPoint.z]
             return nPoint
  
-    def calculatePose(self,point1,point2,point3):
+    def calculate_pose(self,point1,point2,point3):
 
             #Create Y axis and Z Axis
             VY = self.subtractPoints(point1,point2)
@@ -249,7 +246,7 @@ class pose_calc:
                  
 def main():
     run = PointClick()
-    run.pointClicker()
+    run.point_clicker()
 
 
 if __name__ == '__main__':
