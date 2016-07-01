@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="enable_robot" default="-e"/>
+    <arg name="joint" default="true"/>
+    <arg name="remap" default="true"/>
+    <arg name="moveit" default="true"/>
+    <arg name="kinect" default="true"/>
+    <arg name="camera_link_pose"  default=" -0.13250 -0.50831 0.15450 -0.35569 0.76844 -0.49076 0.20525 "/>
+
+    <group>
+        <include file="$(find baxter_grasp)/launch/baxter_start.launch">
+            <arg name="enable_robot" value="$(arg enable_robot)" />
+            <arg name="joint" value="$(arg joint)" />
+            <arg name="remap" value="$(arg remap)"/>
+        </include>
+    </group>
+
+    <group if="$(arg kinect)">
+        <include file="$(find kinect2_bridge)/launch/tf2_kinect2_bridge.launch">
+		<arg name="camera_link_pose" value="$(arg camera_link_pose)"/>
+        </include>
+    </group>
+
+    <group if="$(arg moveit)">
+        <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch">
+            <arg name="kinect" value="$(arg kinect)" />
+        </include>
+    </group>
+</launch>
