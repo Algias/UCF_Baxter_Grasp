@@ -244,11 +244,11 @@ class PoseCalc:
             # find centroid of the three points to use as coordinates and move
             # along the Z axis back .1 meters
             self.pose_s.pose.position.x = (point1[0] + point2[0] 
-                                           + point3[0]) / 3 - 0.10 * VZn[0]
+                                           + point3[0]) / 3 - 0.20 * VZn[0]
             self.pose_s.pose.position.y = (point1[1] + point2[1] 
-                                           + point3[1]) / 3 - 0.10 * VZn[1]
+                                           + point3[1]) / 3 - 0.20 * VZn[1]
             self.pose_s.pose.position.z = (point1[2] + point2[2] 
-                                           + point3[2]) / 3 - 0.10 * VZn[2]
+                                           + point3[2]) / 3 - 0.20 * VZn[2]
             self.pose_s.pose.orientation.w = quat[0]
             self.pose_s.pose.orientation.x = quat[1]
             self.pose_s.pose.orientation.y = quat[2]
