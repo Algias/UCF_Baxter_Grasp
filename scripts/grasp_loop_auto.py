@@ -40,15 +40,16 @@ class ReceivePoses:
     def callback2(self, data):
         self.final_pose = data;
         # rospy.loginfo(rospy.get_caller_id() + " \n %s", self.final_pose)
+        
     def clear_map(self):
         rospy.wait_for_service("/clear_octomap")
         try:
-            h = rospy.ServiceProxy("/clear_octomap",std_srvs.srv.Empty())
+            h = rospy.ServiceProxy("/clear_octomap", std_srvs.srv.Empty())
             h()
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: %s" % e
               
-def grapser_loop():
+class grapser_loop():
     print "===== Starting test code ====="
 
     moveit_commander.roscpp_initialize(sys.argv)
@@ -68,6 +69,7 @@ def grapser_loop():
                                      queue_size=10)
     
     Grasp = ReceivePoses()
+    group.set_num_planning_attempts(3)
     pose_table = geometry_msgs.msg.PoseStamped()
     pose_table.header.frame_id = "base"
     pose_table.pose.position.x = .5
@@ -97,6 +99,7 @@ def grapser_loop():
     pose_generic.pose.orientation.y = 0
     pose_generic.pose.orientation.z = 0
     pose_generic.pose.orientation.w = 1
+    
     scene.remove_world_object("box1")
     scene.remove_world_object("table")
     scene.remove_world_object("kinect")
@@ -109,60 +112,82 @@ def grapser_loop():
     scene.add_box("kinect", pose_kinect, size=(.25, .25, 1))
     
     Grasp.clear_map()
-    octomap = False
+    
+    # set to true for attached object
+    object = False
+    
+    
+    
     rospy.sleep(2.5)
     
-    # grip_right.calibrate()
+    # Wait until first point is selected
+    n = raw_input("\n!!!!! Enter to continue or q to quit(Ensure first point is selected)!!!!!\n")
+    
+    if n is "^C" or n is "q":
+        moveit_commander.roscpp_shutdown()
+
+    if n is "":
+        pass
+    
+    grip_right.calibrate()
+    
+    initpose = [1.093728,
+                    - 0.76929136,
+                    - 0.14764565,
+                    0.98174770,
+                    0.08091748,
+                    1.34338367,
+                    - 0.02914563]
+
+
+    group.set_joint_value_target(initpose)
+    
+    initMove1 = group.go(wait=True)
+    # For automatic picking
+    pose_previous = geometry_msgs.msg.Pose()
+    
+    first_motion = True
 
     while not rospy.is_shutdown():
+        
+        Grasp.listen()    
 
-        n = raw_input("\n!!!!! enter to continue or q to quit!!!!!")
-        if n is "^C" or n is "q":
-            break
-        if n is "":
+        if Grasp.final_pose.pose != pose_previous:
             
+            pose_previous = Grasp.final_pose.pose
             rospy.sleep(.5)
             # # listen to poses
             Grasp.listen()    
-            # grip_right.open()
+            grip_right.open()
             scene.remove_world_object("box1")
             Grasp.clear_map()
-
-            # This is the go to initial pose function
-            print "===== Generating plan - initial pose =====" 
-            pose_init1 = geometry_msgs.msg.Pose()
-            pose_init1.position.x = 0.7
-            pose_init1.position.y = -0.25
-            pose_init1.position.z = 0.17
-            pose_init1.orientation.x = 1
-            pose_init1.orientation.y = 0
-            pose_init1.orientation.z = 0
-            pose_init1.orientation.w = 0
-            
-            # Joint angles for initial pose
-            initpose = [1.093728,
-                            - 0.76929136,
-                            - 0.14764565,
-                            0.98174770,
-                            0.08091748,
-                            1.34338367,
-                            - 0.02914563]
-        
-        
-            # group.set_pose_target(pose_init1)
-            group.set_joint_value_target(initpose)
-            
-            initMove1 = group.go(wait=True)
-            print "===== Motion Succeed? =====", initMove1
-            
-            rospy.sleep(.5)
-            group.clear_pose_targets()
-            Grasp.clear_map()
-
-            
+            if not first_motion:
+                # This is the go to initial pose function
+                print "===== Generating plan - initial pose =====" 
+                 
+                # Joint angles for initial pose
+                initpose = [1.093728,
+                                - 0.76929136,
+                                - 0.14764565,
+                                0.98174770,
+                                0.08091748,
+                                1.34338367,
+                                - 0.02914563]
+             
+                group.set_joint_value_target(initpose)
+                 
+                initMove1 = group.go(wait=True)
+                print "===== Motion Succeed? =====", initMove1
+                 
+                rospy.sleep(.5)
+                group.clear_pose_targets()
+                Grasp.clear_map()
+ 
+             
             # This is the go to stop pose function
             # If the arm is in the initial position, go to stop pose
-            if initMove1: 
+            if initMove1:
+                first_motion = False
                 print "===== Generating plan - stop pose ====="
                 pose_target1 = geometry_msgs.msg.Pose()
                 pose_target1.position.x = Grasp.stop_pose.pose.position.x
@@ -227,10 +252,10 @@ def grapser_loop():
             # if the arm is at the final pose, return to stop pose
             if finalMove:
                 print "===== Closing Gripper and Attaching Object ====="
-                # grip_right.close()
+                grip_right.close()
                 rospy.sleep(2)
                 group.clear_pose_targets()
-                if octomap:
+                if object:
                     scene.attach_box("right_gripper", "box1",
                                  pose=pose_generic,
                                  size=(.2, .2, .2),
@@ -273,10 +298,10 @@ def grapser_loop():
                 group.set_joint_value_target(initpose)
                 
                 initMove2 = group.go(wait=True)
-                print "===== Motion Succeed? ======", initMove2
+                print "===== Motion Succeed? =====", initMove2
                 
                 rospy.sleep(.5)
-                # grip_right.open()
+                grip_right.open()
                 group.clear_pose_targets()
                 rospy.sleep(1)
             
@@ -286,10 +311,18 @@ def grapser_loop():
             scene.remove_attached_object("right_gripper")
             scene.remove_world_object("box1")
             Grasp.clear_map()
-
+            
             rospy.sleep(2.0)
             print "===== STOPPING ====="
-    
+            ready = False
+        # Rate at which the loop executes, when waiting for new poses
+        rate = rospy.Rate(1)  # 1hz
+        rate.sleep()
+        
+        if Grasp.final_pose.pose == pose_previous and not ready:
+            print "===== Waiting for new pose... ====="
+            ready = True
+        
     moveit_commander.roscpp_shutdown()
 
 if __name__ == '__main__':
