@@ -80,15 +80,8 @@ class GraspLoop():
                         0.08091748,
                         1.34338367,
                         3.0]
-        # 1.7 works as well
-        #self.initpose = [1.093728,
-         #               - 0.76929136,
-         #               - 0.14764565,
-         #               0.98174770,
-         #               0.08091748,
-         #               1.34338367,
-         #               - 0.02914563]
-        #
+        # 1.7 works as well for last number
+        
         #Clears the scene in case of leftover objects
         self.scene.remove_world_object("box1")
         self.scene.remove_world_object("table")
@@ -167,9 +160,9 @@ class GraspLoop():
         #set to true for grippers to be used
         use_gripper = True
         #Set to true for clearing octomap
-        octomap = False
+        octomap = True
         # set to true for attached object
-        object = False
+        object = True
 
         pose_table = geometry_msgs.msg.PoseStamped()
         pose_table.header.frame_id = "base"

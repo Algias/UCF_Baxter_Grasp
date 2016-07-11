@@ -20,6 +20,8 @@
         <include file="$(find kinect2_bridge)/launch/tf2_kinect2_bridge.launch">
 		<arg name="camera_link_pose" value="$(arg camera_link_pose)"/>
         </include>
+    	<node name="camera_streamer" pkg="baxter_grasp" type="camera_streamer.py" output="screen">
+    	</node>
     </group>
 
     <group if="$(arg moveit)">
