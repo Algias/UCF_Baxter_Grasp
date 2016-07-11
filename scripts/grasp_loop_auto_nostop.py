@@ -67,26 +67,40 @@ class GraspLoop():
                                         moveit_msgs.msg.DisplayTrajectory,
                                          queue_size=10)
         
+        #Creates instance of class for subscribing to and listening to poses
         self.Grasp = ReceivePoses()
         
         self.group.set_num_planning_attempts(3)
         
+        #Defines initial starting pose to return to (joint angles)
         self.initpose = [1.093728,
                         - 0.76929136,
                         - 0.14764565,
                         0.98174770,
                         0.08091748,
                         1.34338367,
-                        - 0.02914563]
-        
+                        3.0]
+        # 1.7 works as well
+        #self.initpose = [1.093728,
+         #               - 0.76929136,
+         #               - 0.14764565,
+         #               0.98174770,
+         #               0.08091748,
+         #               1.34338367,
+         #               - 0.02914563]
+        #
+        #Clears the scene in case of leftover objects
         self.scene.remove_world_object("box1")
         self.scene.remove_world_object("table")
         self.scene.remove_world_object("kinect")
         
+        #Runs the main loop function
         self.grasper_loop()
         
     def update_pose(self, pose_input):
+        
         n_pose = geometry_msgs.msg.Pose()
+        
         if isinstance(pose_input, list):
             n_pose.position.x = pose_input[0]
             n_pose.position.y = pose_input[1]
@@ -96,6 +110,7 @@ class GraspLoop():
             n_pose.orientation.z = pose_input[5]
             n_pose.orientation.w = pose_input[6]
             return n_pose
+        
         if isinstance(pose_input, geometry_msgs.msg.Pose):
             n_pose.position.x = pose_input.position.x
             n_pose.position.y = pose_input.position.y
@@ -105,6 +120,7 @@ class GraspLoop():
             n_pose.orientation.z = pose_input.orientation.z
             n_pose.orientation.w = pose_input.orientation.w
             return n_pose
+        
         if isinstance(pose_input, geometry_msgs.msg.PoseStamped):
             n_pose.position.x = pose_input.pose.position.x
             n_pose.position.y = pose_input.pose.position.y
@@ -114,6 +130,7 @@ class GraspLoop():
             n_pose.orientation.z = pose_input.pose.orientation.z
             n_pose.orientation.w = pose_input.pose.orientation.w
             return n_pose
+        
         else: 
             return Empty() 
             print "error"
@@ -123,9 +140,11 @@ class GraspLoop():
             n_waypoint.append(pose)        
             (n_plan, n_fraction) = self.group.compute_cartesian_path(n_waypoint,
                                                               .01, 0.0, False)
-            print "===== Moving to object ====="
+            print "===== Moving in Cartesian Path ====="
             print "===== Percentage of Path followed: ", (n_fraction / 1.00 * 100), " % ====="
-            return n_plan, n_fraction
+            if n_fraction > 0:
+                return self.group.execute(n_plan)
+            return False
         
     def clear_map(self):
         rospy.wait_for_service("/clear_octomap")
@@ -135,12 +154,22 @@ class GraspLoop():
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             
+    def print_results(self,result,motion):
+        if result:
+            print "===== Successfully went to ", motion," ====="
+        if not result:
+            print "====== Attempt to go to ", motion, "failed ====="
+            
     def grasper_loop(self):
         
         print "===== Starting test code ====="
-        ready = bool
+        ready_for_pose = bool
+        #set to true for grippers to be used
         use_gripper = True
+        #Set to true for clearing octomap
         octomap = False
+        # set to true for attached object
+        object = False
 
         pose_table = geometry_msgs.msg.PoseStamped()
         pose_table.header.frame_id = "base"
@@ -157,41 +186,49 @@ class GraspLoop():
         rospy.sleep(.5)
     
         self.scene.add_box("table", pose_table, size=(1.1, 1.1, 1.1))
-        self.scene.add_box("kinect", pose_kinect, size=(.25, .25, 1))
+        self.scene.add_box("kinect", pose_kinect, size=(.25, .25, 1.25))
         
         if octomap:
             self.clear_map()
         
-        # set to true for attached object
-        object = False
-        
-        #Wait for scene to be updated with table
+        # Wait for scene to be updated with table
+        print"=====Waiting for scene to be updated ====="
         rospy.sleep(3.0)
         
-        # Wait until first point is selected
+        # Wait until first point is selected, or quit out if you need to
         n = raw_input("\n!!!!! Enter to continue or q to quit(Ensure first point is selected)!!!!!\n")
         
-        if n is "^C" or n is "q":
+        if n == "^C" or n == "q":
             moveit_commander.roscpp_shutdown()
-    
-        if n is "":
+        if n == "":
             pass
-        
         else:
             moveit_commander.roscpp_shutdown()
             
         if use_gripper:
             self.grip_right.calibrate()
-    
+            
+        if octomap:
+            self.clear_map()    
+            
         self.group.set_joint_value_target(self.initpose)
         
-        initMove1 = self.group.go(wait=True)
+        print "===== Going to intial pose ====="
+        first_go_initial = self.group.go(wait=True)
+        
+        if octomap:
+            self.clear_map()    
+        
         # For automatic picking
         pose_previous = geometry_msgs.msg.Pose()
         
         first_motion = True
     
         while not rospy.is_shutdown():
+            
+            first_stop_move = bool
+            go_final = bool
+            second_stop_move = bool
             
             self.Grasp.listen()
             
@@ -203,44 +240,43 @@ class GraspLoop():
                 if use_gripper:
                     self.grip_right.open()
                     
-                self.scene.remove_world_object("box1")
-                
-                if octomap:
-                    self.clear_map()    
-                          
+                self.scene.remove_world_object("box1")  
+                    
+                #If this is not the first motion, and returning initial failed,
+                #Try to go to initial again
+                if first_motion == False and return_initial == False:
+                    print"===== Returning to initial position after previous failure ====="
+                    if octomap:
+                        self.clear_map()  
+                    self.group.set_joint_value_target(self.initpose)
+                    first_go_initial = self.group.go(wait=True)
+                    self.print_results(first_go_initial, "return initial")
+                    
+                return_initial = bool
+
                 # This is the go to stop pose function
                 # If the arm is in the initial position, go to stop pose
-                if initMove1:
+                if first_go_initial is True:
                     
+                    if octomap:
+                        self.clear_map()
+                        
                     first_motion = False
                     
                     print "===== Generating plan - stop pose ====="
                     pose_target1 = geometry_msgs.msg.Pose()
                     pose_target1 = self.update_pose(self.Grasp.stop_pose.pose)
                     self.group.set_pose_target(pose_target1)
-                    
-                    stopMove1 = self.group.go(wait=True)
-                    print "===== Motion Succeed? =====", stopMove1
+                    first_stop_move = self.group.go(wait=True)
+                    self.print_results(first_stop_move,"stop pose")
                     
                     rospy.sleep(.5)
                     
                     self.group.clear_pose_targets()
-                    
-                    if octomap:
-                        self.clear_map()
-    
-                    
-                # If the arm did not reach initial pose, stay.
-                else:
-                    print "***** ERROR: Could not reach initial Pose *****"
-                    stopMove1 = False
-                    finalMove = False
-                    stopMove2 = False
-                    initMove2 = False
                 
                 # This is the move to final pose function
                 # If the arm is at the stop pose position, move to final pose
-                if stopMove1:
+                if first_stop_move is True:
                     
                     print "===== Generating plan - final pose ====="
                     
@@ -249,39 +285,26 @@ class GraspLoop():
                         
                     pose_target2 = geometry_msgs.msg.Pose()
                     pose_target2 = self.update_pose(self.Grasp.final_pose.pose)
-
-                    (plan2, fraction1) = self.go_cartesian(pose_target2)
+                    go_final = self.go_cartesian(pose_target2)
+                    self.print_results(go_final, "final pose")
                     
-                    if fraction1 > 0:
-                        finalMove = self.group.execute(plan2)
-                        print "===== Motion Succeed? =====", finalMove
-                        
-                    else:
-                        finalMove = False
-                        initMove2 = False
-                        
                     rospy.sleep(.5)
                     
-                # If the arm does not go to stop pose, stay at initial pose        
-                else:
-                    
-                    print"***** ERROR: Could not go to stop pose! *****"
-                    finalMove = False
-                    stopMove2 = False
-                    initMove2 = False
-                    
                 # This is the return to stop pose function
-                # if the arm is at the final pose, return to stop pose
-                if finalMove:
+                if go_final is True:
                     
-                    print "===== Closing Gripper and Attaching Object ====="
+                    print "===== Closing Gripper ====="
                     if use_gripper:
                         self.grip_right.close()
+                        
+                    if octomap:
+                        self.clear_map()  
                         
                     rospy.sleep(2)
                     self.group.clear_pose_targets()
                     
                     if object:
+                        print"===== Attaching collision object ====="
                         self.scene.attach_box("right_gripper", "box1",
                                      pose=pose_generic,
                                      size=(.2, .2, .2),
@@ -298,35 +321,25 @@ class GraspLoop():
                                                     "right_lower_forearm",
                                                     "right_hand_accelerometer"])
                     rospy.sleep(1)
-                    
-                    if octomap:
-                        self.clear_map()
      
                     print "===== Generating plan - back to stop pose ====="
-                    (plan3, fraction2) = self.go_cartesian(pose_target1)
-
-                    if fraction2 > 0:
-                        stopMove2 = self.group.execute(plan3)
-                        print "===== Motion Succeed? ======", stopMove2
-                        
-                    else: stopMove2 = False
+                    second_stop_move = self.go_cartesian(pose_target1)
+                    self.print_results(second_stop_move,"return stop pose")
                     
                     rospy.sleep(1.5)
                     
                     self.group.clear_pose_targets()
                     
-                    if octomap:
-                        self.clear_map()
-    
-        
+                        
                 # if the arm returned to stop pose, return to initial
-                if stopMove2:
-                    
+                if second_stop_move is True:
+                    if octomap:
+                        self.clear_map()  
                     print "===== Generating plan - back to initial pose ====="
                     self.group.set_joint_value_target(self.initpose)
                     
-                    initMove2 = self.group.go(wait=True)
-                    print "===== Motion Succeed? =====", initMove2
+                    return_initial = self.group.go(wait=True)
+                    self.print_results(return_initial, "return initial")
                     
                     rospy.sleep(.5)
                     
@@ -337,25 +350,37 @@ class GraspLoop():
                     rospy.sleep(1)
                 
                 # If the arm returned to initial successfully
-                if initMove2:
+                if return_initial is True:
                     print"===== Pickup Succeeded ====="
+                else:
+                    print"===== Pickup failed ====="
                     
                 self.scene.remove_attached_object("right_gripper")
                 self.scene.remove_world_object("box1")
                 
-                if octomap:
-                    self.clear_map()
-                
                 rospy.sleep(2.0)
-                ready = False
+                ready_for_pose = False
+            #Ensures that waiting for new pose is printed only once
+            #Also only prints if it had not received a new pose
+            if go_final == False or second_stop_move == False:
+                return_initial = False
+                
+            if first_motion == False and (first_stop_move == False or second_stop_move == False):
+                print"===== Returning to initial position after previous failure ====="
+                if octomap:
+                    self.clear_map()  
+                self.group.set_joint_value_target(self.initpose)
+                return_initial = self.group.go(wait=True)
+                self.print_results(first_go_initial, "return initial")
+                
+                
+            if self.Grasp.final_pose.pose == pose_previous and not ready_for_pose:
+                print "===== Waiting for new pose... =====\n"
+                ready_for_pose = True
                 
             # Rate at which the loop executes, when waiting for new poses
             rate = rospy.Rate(1)  # 1hz
             rate.sleep()
-            
-            if self.Grasp.final_pose.pose == pose_previous and not ready:
-                print "===== Waiting for new pose... ====="
-                ready = True
             
         moveit_commander.roscpp_shutdown()
 
