@@ -24,11 +24,12 @@
 
         <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
         </include>
-<!-- doesnt output file if runnning from here /-->
-    	<!--node name="camera_streamer" pkg="baxter_grasp" type="camera_streamer.py" output="screen">
-    	</node-->
+
+    	<node name="camera_streamer" pkg="baxter_grasp" type="camera_streamer.py" output="screen">
+    	</node>
     <node pkg="tf" type="static_transform_publisher" name="camera_link_broadcaster"
         args="0 +0.035 0 0 0 0 right_gripper calib_frame 10" />
+<!-- doesnt output file if runnning from here /-->
     <!--node name="camera_calibrate" pkg="baxter_grasp" type="camera_calibrator.py" output="screen">
     </node-->
     <node name="$(anon rviz)" launch-prefix="$(arg launch_prefix)" pkg="rviz" type="rviz" respawn="false"
