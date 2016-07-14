@@ -66,7 +66,7 @@ def main():
     parser.add_argument(
         '-c', '--camera', choices=['head', 'left_hand_camera', 'right_hand_camera', 'kinect'], required=False,
         type = str,
-        default="kinect",
+        default="right_hand_camera",
         help="the camera to display on baxter"
     )
     args = parser.parse_args(rospy.myargv()[1:])

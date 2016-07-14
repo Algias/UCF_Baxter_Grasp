@@ -6,7 +6,7 @@
     <arg name="moveit" default="true"/>
     <arg name="kinect" default="true"/>
     <arg name="kinectBridge" default="true"/>
-    <arg name="camera_link_pose"  default=" -0.17033 -0.51209 0.14162 -0.34094 0.77061 -0.50492 0.18698 "/>
+    <arg name="camera_link_pose"  default=" -0.1620 -0.5189  0.1462  -0.3358   0.7889   -0.4813 0.1825 "/>
 
     <group>
         <include file="$(find baxter_grasp)/launch/baxter_start.launch">
