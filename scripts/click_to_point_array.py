@@ -56,6 +56,8 @@ class PointClick:
         print "point 3: ", self.point3
         
     def update_array(self,obj1,pose_s,pose_n):
+        
+        #This is setup to ensure the poses do not overwrite one another
         _n_pose = geometry_msgs.msg.Pose()
         _n_pose.position.x = pose_n.position.x
         _n_pose.position.y = pose_n.position.y

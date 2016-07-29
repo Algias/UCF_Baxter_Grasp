@@ -14,11 +14,11 @@ from geometry_msgs.msg import (
 import geometry_msgs.msg
 import moveit_commander
 import moveit_msgs.msg
-import std_srvs.srv
 import rospy
 from std_msgs.msg import Header
 from std_msgs.msg import String
 from std_srvs.srv import Empty
+import std_srvs.srv
 import sys
 
 
@@ -230,9 +230,9 @@ class GraspLoop():
             second_stop_move = bool
             
             self.Grasp.listen()
-            #print self.Grasp.stop_posearray.poses
+            
+            # Checks if the arrays are found, and then 
             if self.Grasp.stop_posearray.poses and self.Grasp.final_posearray.poses:
-                #print "array count: ",arraycount
                 if arraycount < len(self.Grasp.stop_posearray.poses):
                     self.Grasp.stop_pose.pose = self.Grasp.stop_posearray.poses[arraycount]
                     self.Grasp.final_pose.pose = self.Grasp.final_posearray.poses[arraycount]
