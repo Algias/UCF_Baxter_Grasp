@@ -15,6 +15,7 @@ This repo deals with automating grasping objects with the Baxter Research robot.
 Ensure connectivity with Baxter
 Enable baxter and launch moveit, and the kinect with:
  > roslaunch baxter_grasp baxter_grasp.launch
+ 
 Run the grasp loop code:
 >
   rosrun baxter_grasp grasp_loop_auto_nostop.py
