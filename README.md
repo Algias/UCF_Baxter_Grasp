@@ -10,26 +10,42 @@ This repo deals with automating grasping objects with the Baxter Research robot.
 
 [IAI Kinect2 bridge install](https://github.com/code-iai/iai_kinect2)
 
-###Modify MoveIt code for Kinect2
+##Grasp loop code
 
-In src/moveit_robots/baxter/baxter_moveit_config/launch: 
+Ensure connectivity with Baxter
+Enable baxter and launch moveit, and the kinect with:
+ > roslaunch baxter_grasp baxter_grasp.launch
+Run the grasp loop code:
+>
+  rosrun baxter_grasp grasp_loop_auto_nostop.py
+  
+This code takes in poses from the /mypose1 and /mypose2 topics. The arm will then attempt to plan a path and execute motions in order to autonomously grasp objects and place them in a container.
 
-Replace
+##Camera calibrator
 
-> include file="$(find freenect...)
+This file is intended to take clicked points and a calibrated frame and write their transforms to a file for use in matlab.
 
-with 
+This allows for quick calibration of the kinect frame with respect to Baxter's base.
 
-> include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch"
+To run:
+  
+  >roslaunch baxter_Grasp baxter_camera.launch
+  
+  >rosrun baxter_grasp camera_calibrator.py
 
-And set "Camera_link" to "kinect2_link" for transform and octomap nodes.
+##Camera streamer
 
-Also, in src/moveit_robots/baxter/baxter_moveit_config/config, modify kinect_sensor.yaml
-
-Replace
-
-> point_cloud_topic: /kinect2/sd/points
+This file places a camera stream on Baxter's head display.
+ 
+> roslaunch baxter_Grasp baxter_camera.launch
+> rosrun baxter_grasp camera_streamer.py
 
 ##click_to_point code: 
 
 Allows the user to click three points on a pointcloud, and create a pose that that fits the position. Points 1 and 2 are for the gripper closing direction, and point 3 creates the orientation
+  >roslaunch baxter_grasp baxter_grasp.launch
+  >rosrun baxter_grasp click_to_point.py
+
+##camera.rviz
+
+Saved RVIZ layout for camera calibrations.
